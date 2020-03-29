@@ -26,9 +26,9 @@ struct offset {
 };
 
 struct offset offsets[] = {
-	{.row = -1, .col = -1}, {.row = -1, .col =  0}, {.row = -1, .col =  1},
-	{.row =  0, .col = -1},                         {.row =  0, .col =  1},
-	{.row =  1, .col = -1}, {.row =  1, .col =  0}, {.row =  1, .col =  1},
+	{-1, -1}, {-1, 0}, {-1, 1},
+	{ 0, -1},          { 0, 1},
+	{ 1, -1}, { 1, 0}, { 1, 1},
 };
 
 enum state {
@@ -45,14 +45,17 @@ struct Cell {
 	enum state state;
 };
 
-typedef struct World {
+typedef struct World World;
+struct World {
 	int gen;
 	int rows;
 	int cols;
 	float f;
 	float p;
 	struct Cell **grid;
-} World;
+	World *next;
+	World *prev;
+};
 
 
 int n_neighbors = sizeof(offsets) / sizeof(struct offset);
@@ -91,16 +94,29 @@ world_create(int rows, int cols)
 	w->cols = cols;
 	w->f = PROB_IGNITION;
 	w->p = PROB_GROWTH;
-
 	w->grid = calloc(rows, sizeof(struct Cell*));
+	w->next = NULL;
+	w->prev = NULL;
+
 	for (r = 0; r < w->rows; r++)
 		w->grid[r] = calloc(cols, sizeof(struct Cell));
 
 	for (r = 0; r < w->rows; r++)
 		for (k = 0; k < w->cols; k++)
-			w->grid[r][k].state = is_probable(w->p) ? TREE : EMPTY;
+			w->grid[r][k].state = EMPTY;
 
 	return w;
+}
+
+void
+world_init(World *w)
+{
+	int r;
+	int k;
+
+	for (r = 0; r < w->rows; r++)
+		for (k = 0; k < w->cols; k++)
+			w->grid[r][k].state = is_probable(w->p) ? TREE : EMPTY;
 }
 
 
@@ -112,6 +128,8 @@ world_print(World *w)
 	enum state s;
 	char c;
 
+	for (k = 0; k < w->cols; k++)
+		mvprintw(0, k, " ");
 	mvprintw(0, 0, "gen: %d", w->gen);
 	for (r = 0; r < w->rows; r++) {
 		for (k = 0; k < w->cols; k++) {
@@ -145,8 +163,8 @@ world_pos_is_inbounds(World *w, int row, int col)
 	return row >= 0 && row < w->rows && col >= 0 && col < w->cols;
 }
 
-void
-world_next(World *w0, World *w1)
+World *
+world_next(World *w0)
 {
 	int r;
 	int k;
@@ -158,8 +176,15 @@ world_next(World *w0, World *w1)
 	enum state s0;
 	enum state s1;
 	struct offset off;
+	World *w1 = w0->next;
 
-	w1->gen = w0->gen + 1;
+	if (w1)
+		return w1;
+
+	w1       = world_create(w0->rows, w0->cols);
+	w1->gen  = w0->gen + 1;
+	w1->prev = w0;
+
 	for (r = 0; r < w0->rows; r++)
 		for (k = 0; k < w0->cols; k++) {
 			s0 = w0->grid[r][k].state;
@@ -199,6 +224,7 @@ world_next(World *w0, World *w1)
 			}
 			w1->grid[r][k].state = s1;
 		}
+	return w1;
 }
 
 int
@@ -210,15 +236,12 @@ main()
 	int k;
 	int go = 0;
 	struct timespec interval = timespec_of_float(0.1);
-	World *temp;
-	World *curr;
-	World *next;
+	World *w;
 
 	srand48(time(NULL));
 
-	temp = world_create(rows, cols);
-	curr = world_create(rows, cols);
-	next = world_create(rows, cols);
+	w = world_create(rows, cols);
+	world_init(w);
 
 	initscr();
 	noecho();
@@ -228,7 +251,7 @@ main()
 	init_pair(BURN , COLOR_RED  , COLOR_BLACK);
 
 	for (;;) {
-		world_print(curr);
+		world_print(w);
 		if (!go)
 			for (;;) {
 				switch (getch()) {
@@ -242,19 +265,13 @@ main()
 		else
 			if (nanosleep(&interval, NULL) < 0)
 				die("nanosleep: %s", strerror(errno));
-		next_gen: {
-			world_next(curr, next);
-			temp = curr;
-			curr = next;
-			next = temp;
+		next_gen:
+			w = world_next(w);
 			continue;
-		}
-		prev_gen: {
-			temp = next;
-			next = curr;
-			curr = temp;
+		prev_gen:
+			if(w->prev)
+				w = w->prev;
 			continue;
-		}
 	}
 
 	quit:
