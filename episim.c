@@ -12,9 +12,6 @@
 #define ROWS 50
 #define COLS 100
 
-#define STATE_LO 1
-#define STATE_HI 3
-
 #define PROB_IGNITION 0.00001
 #define PROB_GROWTH   0.75
 
@@ -32,13 +29,15 @@ struct offset offsets[] = {
 };
 
 enum state {
-	/*
-	 * Do not want to start from 0 because I want to use these labels as
-	 * ncurses color_pair index, which cannot be 0.
-	 */
-	EMPTY = STATE_LO,
+	EMPTY,
 	TREE,
-	BURN = STATE_HI,
+	BURN,
+};
+
+static const char state2char[] = {
+	' ',
+	'T',
+	'#',
 };
 
 struct Cell {
@@ -132,7 +131,7 @@ world_print(World *w)
 	int r;
 	int k;
 	enum state s;
-	char c;
+	int ci; /* COLOR_PAIR index */
 
 	for (k = 0; k < w->cols; k++)
 		mvprintw(0, k, " ");
@@ -140,24 +139,14 @@ world_print(World *w)
 	for (r = 0; r < w->rows; r++) {
 		for (k = 0; k < w->cols; k++) {
 			s = w->grid[r][k].state;
-			switch (s) {
-			case EMPTY:
-				c = ' ';
-				break;
-			case TREE:
-				c = 'T';
-				break;
-			case BURN:
+			ci = s + 1;
+			if (s == BURN)
 				attron(A_BOLD);
-				c = '#';
-				break;
-			default:
-				assert(0);
-			}
-			attron(COLOR_PAIR(s));
-			mvprintw(r + 1, k, "%c", c);
-			attroff(COLOR_PAIR(s));
-			attroff(A_BOLD);
+			attron(COLOR_PAIR(ci));
+			mvprintw(r + 1, k, "%c", state2char[s]);
+			attroff(COLOR_PAIR(ci));
+			if (s == BURN)
+				attroff(A_BOLD);
 		}
 	}
 	refresh();
@@ -249,9 +238,9 @@ main()
 	initscr();
 	noecho();
 	start_color();
-	init_pair(EMPTY, COLOR_BLACK, COLOR_BLACK);
-	init_pair(TREE , COLOR_GREEN, COLOR_BLACK);
-	init_pair(BURN , COLOR_RED  , COLOR_BLACK);
+	init_pair(EMPTY + 1, COLOR_BLACK, COLOR_BLACK);
+	init_pair(TREE  + 1, COLOR_GREEN, COLOR_BLACK);
+	init_pair(BURN  + 1, COLOR_RED  , COLOR_BLACK);
 
 	for (;;) {
 		world_print(w);
