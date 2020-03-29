@@ -76,8 +76,10 @@ world_print(World *w)
 	mvprintw(0, 0, "gen: %d", w->gen);
 	for (r = 0; r < w->rows; r++) {
 		for (k = 0; k < w->cols; k++) {
-			c = w->grid[r][k].state == ALIVE ? '+' : ' ';
+			c = w->grid[r][k].state == ALIVE ? 'o' : ' ';
+			attron(COLOR_PAIR(1));
 			mvprintw(r + 1, k, "%c", c);
+			attroff(COLOR_PAIR(1));
 		}
 	}
 }
@@ -145,6 +147,8 @@ main()
 
 	initscr();
 	noecho();
+	start_color();
+	init_pair(1, COLOR_BLACK, COLOR_WHITE);
 
 	for (;;) {
 		world_print(curr);
