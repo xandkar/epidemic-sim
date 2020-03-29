@@ -1,15 +1,19 @@
 #include <time.h>
 
+#include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include <ncurses.h>
 
-#define ROWS 40
-#define COLS 80
+#define ROWS 50
+#define COLS 100
 
-#define STATE_LO 0
-#define STATE_HI 1
+#define STATE_LO 1
+#define STATE_HI 3
+
+#define PROB_IGNITION 0.00001
+#define PROB_GROWTH   0.75
 
 struct offset {
 	int row;
@@ -23,8 +27,13 @@ struct offset offsets[] = {
 };
 
 enum state {
-	DEAD  = STATE_LO,
-	ALIVE = STATE_HI,
+	/*
+	 * Do not want to start from 0 because I want to use these labels as
+	 * ncurses color_pair index, which cannot be 0.
+	 */
+	EMPTY = STATE_LO,
+	TREE,
+	BURN = STATE_HI,
 };
 
 struct Cell {
@@ -35,12 +44,20 @@ typedef struct World {
 	int gen;
 	int rows;
 	int cols;
+	float f;
+	float p;
 	struct Cell **grid;
 } World;
 
 
 int n_neighbors = sizeof(offsets) / sizeof(struct offset);
 
+
+int
+is_probable(float probability)
+{
+	return probability >= drand48();
+}
 
 World *
 world_create(int rows, int cols)
@@ -53,6 +70,8 @@ world_create(int rows, int cols)
 	w->gen  = 0;
 	w->rows = rows;
 	w->cols = cols;
+	w->f = PROB_IGNITION;
+	w->p = PROB_GROWTH;
 
 	w->grid = calloc(rows, sizeof(struct Cell*));
 	for (r = 0; r < w->rows; r++)
@@ -60,7 +79,7 @@ world_create(int rows, int cols)
 
 	for (r = 0; r < w->rows; r++)
 		for (k = 0; k < w->cols; k++)
-			w->grid[r][k].state = rand() % (STATE_HI + 1);
+			w->grid[r][k].state = is_probable(w->p) ? TREE : EMPTY;
 
 	return w;
 }
@@ -71,21 +90,38 @@ world_print(World *w)
 {
 	int r;
 	int k;
+	enum state s;
 	char c;
 
 	mvprintw(0, 0, "gen: %d", w->gen);
 	for (r = 0; r < w->rows; r++) {
 		for (k = 0; k < w->cols; k++) {
-			c = w->grid[r][k].state == ALIVE ? 'o' : ' ';
-			attron(COLOR_PAIR(1));
+			s = w->grid[r][k].state;
+			switch (s) {
+			case EMPTY:
+				c = ' ';
+				break;
+			case TREE:
+				c = 'T';
+				break;
+			case BURN:
+				attron(A_BOLD);
+				c = '#';
+				break;
+			default:
+				assert(0);
+			}
+			attron(COLOR_PAIR(s));
 			mvprintw(r + 1, k, "%c", c);
-			attroff(COLOR_PAIR(1));
+			attroff(COLOR_PAIR(s));
+			attroff(A_BOLD);
 		}
 	}
+	refresh();
 }
 
 int
-world_is_inbounds(World *w, int row, int col)
+world_pos_is_inbounds(World *w, int row, int col)
 {
 	return row >= 0 && row < w->rows && col >= 0 && col < w->cols;
 }
@@ -98,7 +134,7 @@ world_next(World *w0, World *w1)
 	int o;   /* offset index */
 	int nr;  /* neighbor's row */
 	int nk;  /* neighbor's col */
-	int n;   /* neighbors state sum */
+	int n;   /* neighbors burning */
 	enum state ns;  /* neighbor's state */
 	enum state s0;
 	enum state s1;
@@ -113,17 +149,35 @@ world_next(World *w0, World *w1)
 				off = offsets[o];
 				nr = r + off.row;
 				nk = k + off.col;
-				if (world_is_inbounds(w0, nr, nk))
-					n += w0->grid[nr][nk].state;
+				if (world_pos_is_inbounds(w0, nr, nk))
+					if (w0->grid[nr][nk].state == BURN)
+						n++;
 			}
-			if (
-			    (s0 == ALIVE && (n == 2 || n == 3))
-			    ||
-			    (s0 == DEAD && (n == 3))
-			)
-				s1 = ALIVE;
-			else
-				s1 = DEAD;
+			switch (s0) {
+			case BURN:
+				s1 = EMPTY;
+				break;
+			case TREE:
+				if (n > 0) {
+					s1 = BURN;
+					break;
+				}
+				if (is_probable(w0->f)) {
+					s1 = BURN;
+					break;
+				}
+				s1 = TREE;
+				break;
+			case EMPTY:
+				if (is_probable(w0->p)) {
+					s1 = TREE;
+					break;
+				}
+				s1 = EMPTY;
+				break;
+			default:
+				assert(0);
+			}
 			w1->grid[r][k].state = s1;
 		}
 }
@@ -139,7 +193,7 @@ main()
 	World *curr;
 	World *next;
 
-	srand(time(NULL));
+	srand48(time(NULL));
 
 	temp = world_create(rows, cols);
 	curr = world_create(rows, cols);
@@ -148,26 +202,28 @@ main()
 	initscr();
 	noecho();
 	start_color();
-	init_pair(1, COLOR_BLACK, COLOR_WHITE);
+	init_pair(EMPTY, COLOR_BLACK, COLOR_BLACK);
+	init_pair(TREE , COLOR_GREEN, COLOR_BLACK);
+	init_pair(BURN , COLOR_RED  , COLOR_BLACK);
 
 	for (;;) {
 		world_print(curr);
 		for (;;) {
 			switch (getch()) {
-			case 'f': goto forward;
-			case 'b': goto backward;
+			case 'n': goto next_gen;
+			case 'p': goto prev_gen;
 			case 'q': goto quit;
 			default : continue;
 			}
 		}
-		forward: {
+		next_gen: {
 			world_next(curr, next);
 			temp = curr;
 			curr = next;
 			next = temp;
 			continue;
 		}
-		backward: {
+		prev_gen: {
 			temp = next;
 			next = curr;
 			curr = temp;
