@@ -172,7 +172,6 @@ world_next(World *w0)
 	int nr;  /* neighbor's row */
 	int nk;  /* neighbor's col */
 	int n;   /* neighbors burning */
-	enum state ns;  /* neighbor's state */
 	enum state s0;
 	enum state s1;
 	struct offset off;
@@ -232,8 +231,6 @@ main()
 {
 	int rows = ROWS;
 	int cols = COLS;
-	int r;
-	int k;
 	int go = 0;
 	struct timespec interval = timespec_of_float(0.1);
 	World *w;
