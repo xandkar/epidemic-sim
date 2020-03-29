@@ -1,7 +1,10 @@
 #include <time.h>
 
 #include <assert.h>
+#include <errno.h>
+#include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <ncurses.h>
@@ -14,6 +17,8 @@
 
 #define PROB_IGNITION 0.00001
 #define PROB_GROWTH   0.75
+
+#define die(...) {fprintf(stderr, __VA_ARGS__); exit(EXIT_FAILURE);}
 
 struct offset {
 	int row;
@@ -52,6 +57,20 @@ typedef struct World {
 
 int n_neighbors = sizeof(offsets) / sizeof(struct offset);
 
+
+struct timespec
+timespec_of_float(double n)
+{
+	double integral;
+	double fractional;
+	struct timespec t;
+
+	fractional = modf(n, &integral);
+	t.tv_sec = (int) integral;
+	t.tv_nsec = (int) (1E9 * fractional);
+
+	return t;
+}
 
 int
 is_probable(float probability)
@@ -189,6 +208,8 @@ main()
 	int cols = COLS;
 	int r;
 	int k;
+	int go = 0;
+	struct timespec interval = timespec_of_float(0.1);
 	World *temp;
 	World *curr;
 	World *next;
@@ -208,14 +229,19 @@ main()
 
 	for (;;) {
 		world_print(curr);
-		for (;;) {
-			switch (getch()) {
-			case 'n': goto next_gen;
-			case 'p': goto prev_gen;
-			case 'q': goto quit;
-			default : continue;
+		if (!go)
+			for (;;) {
+				switch (getch()) {
+				case 'n': goto next_gen;
+				case 'p': goto prev_gen;
+				case 'g': go = 1; goto next_gen;
+				case 'q': goto quit;
+				default : continue;
+				}
 			}
-		}
+		else
+			if (nanosleep(&interval, NULL) < 0)
+				die("nanosleep: %s", strerror(errno));
 		next_gen: {
 			world_next(curr, next);
 			temp = curr;
