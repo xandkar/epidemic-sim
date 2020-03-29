@@ -183,6 +183,7 @@ world_next(World *w0)
 	w1       = world_create(w0->rows, w0->cols);
 	w1->gen  = w0->gen + 1;
 	w1->prev = w0;
+	w0->next = w1;
 
 	for (r = 0; r < w0->rows; r++)
 		for (k = 0; k < w0->cols; k++) {
