@@ -58,6 +58,12 @@ struct World {
 };
 
 
+/*
+ * THE authoritative source of IDs in this program. To help spot ancestry bugs,
+ * like a missing next/prev pointer.
+ */
+int id = 0;
+
 int n_neighbors = sizeof(offsets) / sizeof(struct offset);
 
 
@@ -89,7 +95,7 @@ world_create(int rows, int cols)
 	int k;
 
 	w = calloc(1, sizeof(World));
-	w->gen  = 0;
+	w->gen  = id++;
 	w->rows = rows;
 	w->cols = cols;
 	w->f = PROB_IGNITION;
@@ -181,7 +187,6 @@ world_next(World *w0)
 		return w1;
 
 	w1       = world_create(w0->rows, w0->cols);
-	w1->gen  = w0->gen + 1;
 	w1->prev = w0;
 	w0->next = w1;
 
