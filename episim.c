@@ -27,7 +27,7 @@ enum state {
 	ALIVE = STATE_HI,
 };
 
-struct Agent {
+struct Cell {
 	enum state state;
 };
 
@@ -35,7 +35,7 @@ typedef struct World {
 	int gen;
 	int rows;
 	int cols;
-	struct Agent **grid;
+	struct Cell **grid;
 } World;
 
 
@@ -54,9 +54,9 @@ world_create(int rows, int cols)
 	w->rows = rows;
 	w->cols = cols;
 
-	w->grid = calloc(rows, sizeof(struct Agent*));
+	w->grid = calloc(rows, sizeof(struct Cell*));
 	for (r = 0; r < w->rows; r++)
-		w->grid[r] = calloc(cols, sizeof(struct Agent));
+		w->grid[r] = calloc(cols, sizeof(struct Cell));
 
 	for (r = 0; r < w->rows; r++)
 		for (k = 0; k < w->cols; k++)
