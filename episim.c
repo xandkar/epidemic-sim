@@ -236,7 +236,10 @@ main()
 
 	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize) < 0)
 		die("ioctl: errno = %d, msg = %s\n", errno, strerror(errno));
-	w = world_create(winsize.ws_row, winsize.ws_col);
+	w = world_create(
+	    winsize.ws_row - 1,  /* Leave room for the status line.  */
+	    winsize.ws_col
+	);
 	world_init(w);
 
 	initscr();
