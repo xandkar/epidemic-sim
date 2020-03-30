@@ -284,7 +284,7 @@ main()
 				w = w->prev;
 			goto delay;
 		delay:
-			if (nanosleep(&interval, NULL) < 0)
+			if (nanosleep(&interval, NULL) < 0 && errno != EINTR)
 				die("nanosleep: %s", strerror(errno));
 	}
 
