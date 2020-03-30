@@ -1,3 +1,4 @@
+#include <sys/ioctl.h>
 #include <time.h>
 
 #include <assert.h>
@@ -9,11 +10,9 @@
 
 #include <ncurses.h>
 
-#define ROWS 50
-#define COLS 100
-
-#define PROB_IGNITION 0.00001
-#define PROB_GROWTH   0.75
+#define FPS 20
+#define PROB_IGNITION 0.001  /* f */
+#define PROB_GROWTH   0.025  /* p */
 
 #define die(...) {fprintf(stderr, __VA_ARGS__); exit(EXIT_FAILURE);}
 
@@ -135,7 +134,11 @@ world_print(World *w)
 
 	for (k = 0; k < w->cols; k++)
 		mvprintw(0, k, " ");
-	mvprintw(0, 0, "gen: %d", w->gen);
+	mvprintw(
+	    0, 0,
+	    "gen: %4d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
+	    w->gen, w->p, w->f, (w->p / w->f), FPS
+	);
 	for (r = 0; r < w->rows; r++) {
 		for (k = 0; k < w->cols; k++) {
 			s = w->grid[r][k].state;
@@ -224,15 +227,16 @@ world_next(World *w0)
 int
 main()
 {
-	int rows = ROWS;
-	int cols = COLS;
 	int go = 0;
-	struct timespec interval = timespec_of_float(0.1);
+	struct timespec interval = timespec_of_float(1.0 / FPS);
+	struct winsize winsize;
 	World *w;
 
 	srand48(time(NULL));
 
-	w = world_create(rows, cols);
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize) < 0)
+		die("ioctl: errno = %d, msg = %s\n", errno, strerror(errno));
+	w = world_create(winsize.ws_row, winsize.ws_col);
 	world_init(w);
 
 	initscr();
