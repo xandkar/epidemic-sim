@@ -227,7 +227,7 @@ world_next(World *w0)
 int
 main()
 {
-	int go = 0;
+	int playing = 0;
 	struct timespec interval = timespec_of_float(1.0 / FPS);
 	struct winsize winsize;
 	World *w;
@@ -246,31 +246,45 @@ main()
 	init_pair(TREE  + 1, COLOR_GREEN, COLOR_BLACK);
 	init_pair(BURN  + 1, COLOR_RED  , COLOR_BLACK);
 
+	timeout(-1);
 	for (;;) {
 		world_print(w);
-		if (!go)
-			for (;;) {
-				switch (getch()) {
-				case 'n': goto next_gen;
-				case 'p': goto prev_gen;
-				case 'g': go = 1; goto next_gen;
-				case 'q': goto quit;
-				default : continue;
+		control:
+			switch (getch()) {
+			case 'p':
+				if (playing) {
+					timeout(-1);
+					playing = 0;
+				} else {
+					timeout(0);
+					playing = 1;
 				}
+				goto forward;
+			case 'f':
+				goto forward;
+			case 'b':
+				goto back;
+			case 's':
+				goto stop;
+			default:
+				if (playing)
+					goto forward;
+				else
+					goto control;
 			}
-		else
-			if (nanosleep(&interval, NULL) < 0)
-				die("nanosleep: %s", strerror(errno));
-		next_gen:
+		forward:
 			w = world_next(w);
-			continue;
-		prev_gen:
+			goto delay;
+		back:
 			if(w->prev)
 				w = w->prev;
-			continue;
+			goto delay;
+		delay:
+			if (nanosleep(&interval, NULL) < 0)
+				die("nanosleep: %s", strerror(errno));
 	}
 
-	quit:
+	stop:
 	endwin();
 	return 0;
 }

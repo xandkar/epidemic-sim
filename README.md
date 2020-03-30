@@ -21,7 +21,7 @@ TODO
 - [ ] Data plotting
 - [ ] Reports
 - [ ] Runtime parameters
-- [ ] Runtime controls from any state: play/pause toggle, forward, back, stop
+- [x] Runtime controls from any state: play/pause toggle, forward, back, stop
 - [ ] Runtime control pipe:
 
     echo 'play' > control
