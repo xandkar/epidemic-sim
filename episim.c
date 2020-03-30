@@ -125,7 +125,7 @@ world_init(World *w)
 
 
 void
-world_print(World *w)
+world_print(World *w, int playing)
 {
 	int r;
 	int k;
@@ -136,7 +136,8 @@ world_print(World *w)
 		mvprintw(0, k, " ");
 	mvprintw(
 	    0, 0,
-	    "gen: %4d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
+	    "%s | gen: %4d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
+	    (playing ? "|>" : "||"),
 	    w->gen, w->p, w->f, (w->p / w->f), FPS
 	);
 	for (r = 0; r < w->rows; r++) {
@@ -251,7 +252,7 @@ main()
 
 	timeout(-1);
 	for (;;) {
-		world_print(w);
+		world_print(w, playing);
 		control:
 			switch (getch()) {
 			case 'p':
