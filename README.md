@@ -9,12 +9,28 @@ TODO
 - [x] Forest Fire model
 - [ ] Agent mobility
 - [ ] Quarantine zones
+- [ ] Agent attributes
+- [ ] Agent destinations (home, )
+- [ ] Domain time
 
 ### Improvements
 - [ ] Aggregates
 - [ ] CLI parameters
-- [ ] Runtime parameters
 - [ ] Smart(er) mobility (go to destination rather than wonder randomly)
 - [ ] Data export
 - [ ] Data plotting
 - [ ] Reports
+- [ ] Runtime parameters
+- [ ] Runtime controls from any state: play/pause toggle, forward, back, stop
+- [ ] Runtime control pipe:
+
+    echo 'play' > control
+    echo 'stop' > control
+    echo 'back' > control
+    echo 'forw' > control
+    echo 'set f 0.001' > control
+    echo 'set p 0.025' > control
+
+### Maybe
+- [ ] limit generation storage to a circular buffer
+- [ ] scripting language beyond basic parameter setting
