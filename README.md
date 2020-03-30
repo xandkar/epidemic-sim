@@ -1,6 +1,9 @@
 Epidemic Simulator
 ==================
 
+A work-in-progress exploration of how one could go about simulating an epidemic.
+Beginning with a Forest Fire model.
+
 TODO
 ----
 
