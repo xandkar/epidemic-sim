@@ -19,6 +19,8 @@ TODO
 - [ ] Domain time
 
 ### Improvements
+- [ ] Distinguish between sizes of world and screen, screen being a shown
+      subset of the world.
 - [ ] Aggregates
 - [ ] CLI parameters
 - [ ] Smart(er) mobility (go to destination rather than wonder randomly)
