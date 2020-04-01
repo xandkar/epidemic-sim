@@ -60,7 +60,7 @@ Questions
 ##### options
 - Yes, then cell is a list of agents.
     - cell occupancy limit becomes another sim parameter
-    - how to display occupancy n>1 as a since character?
+    - how to display occupancy n>1 as a single character?
 - No, then attempt to co-occupy must be rejected
     - how to handle the rejection when multiple agents attempt to occupy on the
       same time step/gen?
