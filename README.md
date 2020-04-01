@@ -55,3 +55,18 @@ Questions
 - Disallow changing the past?
 ##### decision
 - Recompute the timeline, incrementally
+
+#### Allow cell occupancy n>1?
+##### options
+- Yes, then cell is a list of agents.
+    - cell occupancy limit becomes another sim parameter
+    - how to display occupancy n>1 as a since character?
+- No, then attempt to co-occupy must be rejected
+    - how to handle the rejection when multiple agents attempt to occupy on the
+      same time step/gen?
+        - transaction abort of some sort?
+            - 2 grid passes:
+                1. place agents in waiting rooms
+                2. check for collisions and reject:
+                    a. n - 1 candidates?
+                    b. n candidates?
