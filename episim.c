@@ -13,8 +13,9 @@
 #define FPS 20
 #define PROB_IGNITION 0.001  /* f */
 #define PROB_GROWTH   0.025  /* p */
+#define CMD_BUF_SIZE  50
 
-#define die(...) {fprintf(stderr, __VA_ARGS__); exit(EXIT_FAILURE);}
+#define die(...) do {fprintf(stderr, __VA_ARGS__); exit(EXIT_FAILURE);} while (0)
 
 struct offset {
 	int row;
@@ -45,9 +46,10 @@ struct Cell {
 
 typedef struct World World;
 struct World {
-	int gen;
-	int rows;
-	int cols;
+	unsigned int id;
+	unsigned int gen;
+	unsigned int rows;
+	unsigned int cols;
 	float f;
 	float p;
 	struct Cell **grid;
@@ -56,13 +58,7 @@ struct World {
 };
 
 
-/*
- * THE authoritative source of IDs in this program. To help spot ancestry bugs,
- * like a missing next/prev pointer.
- */
-int id = 0;
-
-int n_neighbors = sizeof(offsets) / sizeof(struct offset);
+unsigned int n_neighbors = sizeof(offsets) / sizeof(struct offset);
 
 
 struct timespec
@@ -86,18 +82,24 @@ is_probable(float probability)
 }
 
 World *
-world_create(int rows, int cols)
+world_create(unsigned int gen, unsigned int rows, unsigned int cols, float f, float p)
 {
+	/*
+	 * IDs help us spot ancestry bugs, like a missing next/prev pointer.
+	 */
+	static unsigned int id = 0;
+
 	World *w;
-	int r;
-	int k;
+	unsigned int r;
+	unsigned int k;
 
 	w = calloc(1, sizeof(World));
-	w->gen  = id++;
+	w->id   = id++;
+	w->gen  = gen;
 	w->rows = rows;
 	w->cols = cols;
-	w->f = PROB_IGNITION;
-	w->p = PROB_GROWTH;
+	w->f = f;
+	w->p = p;
 	w->grid = calloc(rows, sizeof(struct Cell*));
 	w->next = NULL;
 	w->prev = NULL;
@@ -115,8 +117,8 @@ world_create(int rows, int cols)
 void
 world_init(World *w)
 {
-	int r;
-	int k;
+	unsigned int r;
+	unsigned int k;
 
 	for (r = 0; r < w->rows; r++)
 		for (k = 0; k < w->cols; k++)
@@ -127,8 +129,8 @@ world_init(World *w)
 void
 world_print(World *w, int playing)
 {
-	int r;
-	int k;
+	unsigned int r;
+	unsigned int k;
 	enum state s;
 	int ci; /* COLOR_PAIR index */
 
@@ -136,9 +138,9 @@ world_print(World *w, int playing)
 		mvprintw(0, k, " ");
 	mvprintw(
 	    0, 0,
-	    "%s | gen: %4d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
+	    "%s | gen: %4d | id: %d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
 	    (playing ? "|>" : "||"),
-	    w->gen, w->p, w->f, (w->p / w->f), FPS
+	    w->gen, w->id, w->p, w->f, (w->p / w->f), FPS
 	);
 	for (r = 0; r < w->rows; r++) {
 		for (k = 0; k < w->cols; k++) {
@@ -157,20 +159,20 @@ world_print(World *w, int playing)
 }
 
 int
-world_pos_is_inbounds(World *w, int row, int col)
+world_pos_is_inbounds(World *w, unsigned int row, unsigned int col)
 {
-	return row >= 0 && row < w->rows && col >= 0 && col < w->cols;
+	return row < w->rows && col < w->cols;
 }
 
 World *
 world_next(World *w0)
 {
-	int r;
-	int k;
-	int o;   /* offset index */
-	int nr;  /* neighbor's row */
-	int nk;  /* neighbor's col */
-	int n;   /* neighbors burning */
+	unsigned int r;
+	unsigned int k;
+	unsigned int o;   /* offset index */
+	unsigned int nr;  /* neighbor's row */
+	unsigned int nk;  /* neighbor's col */
+	unsigned int n;   /* neighbors burning */
 	enum state s0;
 	enum state s1;
 	struct offset off;
@@ -179,7 +181,7 @@ world_next(World *w0)
 	if (w1)
 		return w1;
 
-	w1       = world_create(w0->rows, w0->cols);
+	w1       = world_create(w0->gen + 1, w0->rows, w0->cols, w0->f, w0->p);
 	w1->prev = w0;
 	w0->next = w1;
 
@@ -225,23 +227,54 @@ world_next(World *w0)
 	return w1;
 }
 
+void
+world_destroy_future(World *w)
+{
+	/*
+	 * After changing a world parameter, we must remove at least its
+	 * consequent, child worlds, since they are no longer valid under the
+	 * new parameters and must be re-computed.
+	 *
+	 * TODO: Should the current world be re-computed as well?
+	 * TODO: Perhaps world_next should take these parameters instead of this function?
+	 * TODO: Recompute if params are diff from parent?
+	 */
+	World *cur;
+	World *tmp;
+
+	for (cur = w->next; cur != NULL; ) {
+		tmp = cur->next;
+		free(cur);
+		cur = tmp;
+	}
+	w->next = NULL;
+}
+
 int
 main()
 {
+	int control_timeout = -1;
 	int playing = 0;
 	struct timespec interval = timespec_of_float(1.0 / FPS);
 	struct winsize winsize;
+	char cmd[CMD_BUF_SIZE];
 	World *w;
+	float tmp_p;
+	float tmp_f;
 
 	srand48(time(NULL));
 
 	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize) < 0)
 		die("ioctl: errno = %d, msg = %s\n", errno, strerror(errno));
 	w = world_create(
+	    0,
 	    winsize.ws_row - 1,  /* Leave room for the status line.  */
-	    winsize.ws_col
+	    winsize.ws_col,
+	    PROB_IGNITION,
+	    PROB_GROWTH
 	);
 	world_init(w);
+	memset(cmd, '\0', CMD_BUF_SIZE);
 
 	initscr();
 	noecho();
@@ -250,17 +283,18 @@ main()
 	init_pair(TREE  + 1, COLOR_GREEN, COLOR_BLACK);
 	init_pair(BURN  + 1, COLOR_RED  , COLOR_BLACK);
 
-	timeout(-1);
+	control_timeout = -1;
 	for (;;) {
 		world_print(w, playing);
 		control:
+			timeout(control_timeout);
 			switch (getch()) {
 			case 'p':
 				if (playing) {
-					timeout(-1);
+					control_timeout = -1;
 					playing = 0;
 				} else {
-					timeout(0);
+					control_timeout = 0;
 					playing = 1;
 				}
 				goto forward;
@@ -270,12 +304,32 @@ main()
 				goto back;
 			case 's':
 				goto stop;
+			case ':':
+				goto command;
 			default:
 				if (playing)
 					goto forward;
 				else
 					goto control;
 			}
+		command:
+			timeout(-1);
+			mvprintw(winsize.ws_row - 1, 0, ":");
+			refresh();
+			echo();
+			mvgetstr(winsize.ws_row - 1, 1, cmd);
+			if (sscanf(cmd, "f %f", &tmp_f) == 1) {
+				w->f = tmp_f;
+				world_destroy_future(w);
+			} else
+			if (sscanf(cmd, "p %f", &tmp_p) == 1) {
+				w->p = tmp_p;
+				world_destroy_future(w);
+			}
+			memset(cmd, '\0', CMD_BUF_SIZE);
+			noecho();
+			timeout(control_timeout);
+
 		forward:
 			w = world_next(w);
 			goto delay;

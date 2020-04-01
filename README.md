@@ -27,7 +27,7 @@ TODO
 - [ ] Data export
 - [ ] Data plotting
 - [ ] Reports
-- [ ] Runtime parameters
+- [x] Runtime parameters
 - [x] Runtime controls from any state: play/pause toggle, forward, back, stop
 - [ ] Runtime control pipe:
 
@@ -38,13 +38,20 @@ TODO
     echo 'set f 0.001' > control
     echo 'set p 0.025' > control
 
-### Questions
-- [ ] How to handle the case of modified past?
-    - [ ] Recompute timeline?
-    - [ ] Fork timeline?
-        - [ ] How to navigate forked timelines from the UI?
-    - [ ] Disallow changing the past?
-
 ### Maybe
 - [ ] limit generation storage to a circular buffer
 - [ ] scripting language beyond basic parameter setting
+
+
+Questions
+---------
+
+#### How to handle the case of modified past?
+##### options
+- Recompute timeline?
+- Fork timeline?
+    - How to navigate forked timelines from the UI?
+    - Are forked timelines even useful?
+- Disallow changing the past?
+##### decision
+- Recompute the timeline, incrementally
