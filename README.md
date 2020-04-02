@@ -70,3 +70,57 @@ Questions
                 2. check for collisions and reject:
                     a. n - 1 candidates?
                     b. n candidates?
+
+Notes
+-----
+
+2 approaches:
+1. cellular (state is of a location)
+2. agent-based (state is of an agent changing locations)
+
+For the cellular approach - forest fire model can be augmented with an extra
+state: immunity.
+
+parameters:
+- starting percentage of grid occupancy (tree/empty ratio)
+- non-uniformity of grid occupancy distribution
+- limited number of spontaneous outbreaks
+    - static
+    - dynamic, but relative to something else
+    - only certain locations
+
+
+    states:
+
+    1. empty
+    2. tree
+    3. burning
+
+    1. dead
+    2. healthy
+    3. sick
+
+    1. virgin
+    2. sick
+    3. immune
+    4. dead
+
+    - id infectious dead
+    - cd clean dead
+    - cv clean virgin
+    - ci clean immune
+    - is infectious sick
+    - ii infectious immune
+
+    c d  clean       dead
+    i d  infectious  dead
+    c i  clean       immune
+    i i  infectious  immune
+    c v  clean       virgin
+    i s  infectious  sick
+
+    cv +-> is ---+-> id --> cd
+       |   |     |
+       |   v     v
+       +-> ii -> ci
+
