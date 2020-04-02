@@ -4,6 +4,8 @@ Epidemic Simulator
 A work-in-progress exploration of how one could go about simulating an epidemic.
 Beginning with a Forest Fire model.
 
+![Screenshot](screenshot.png)
+
 Quick demo: https://www.youtube.com/watch?v=gZ4yIJ1_uvg
 
 TODO
