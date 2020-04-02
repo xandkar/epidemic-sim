@@ -133,7 +133,7 @@ world_print(World *w, int playing)
 	mvprintw(
 	    0, 0,
 	    "%s | gen: %d | id: %d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
-	    (playing ? "|>" : "||"),
+	    (playing ? ">" : "="),
 	    w->gen, w->id, w->p, w->f, (w->p / w->f), FPS
 	);
 	for (r = 0; r < w->rows; r++) {
