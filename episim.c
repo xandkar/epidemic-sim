@@ -34,12 +34,6 @@ enum state {
 	BURN,
 };
 
-static const char state2char[] = {
-	' ',
-	'T',
-	'#',
-};
-
 struct Cell {
 	enum state state;
 };
@@ -138,7 +132,7 @@ world_print(World *w, int playing)
 		mvprintw(0, k, " ");
 	mvprintw(
 	    0, 0,
-	    "%s | gen: %4d | id: %d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
+	    "%s | gen: %d | id: %d | p: %.3f | f: %.3f | p/f: %3.f | FPS: %d",
 	    (playing ? "|>" : "||"),
 	    w->gen, w->id, w->p, w->f, (w->p / w->f), FPS
 	);
@@ -149,7 +143,7 @@ world_print(World *w, int playing)
 			if (s == BURN)
 				attron(A_BOLD);
 			attron(COLOR_PAIR(ci));
-			mvprintw(r + 1, k, "%c", state2char[s]);
+			mvprintw(r + 1, k, " ");
 			attroff(COLOR_PAIR(ci));
 			if (s == BURN)
 				attroff(A_BOLD);
@@ -280,8 +274,8 @@ main()
 	noecho();
 	start_color();
 	init_pair(EMPTY + 1, COLOR_BLACK, COLOR_BLACK);
-	init_pair(TREE  + 1, COLOR_GREEN, COLOR_BLACK);
-	init_pair(BURN  + 1, COLOR_RED  , COLOR_BLACK);
+	init_pair(TREE  + 1, COLOR_GREEN, COLOR_GREEN);
+	init_pair(BURN  + 1, COLOR_RED  , COLOR_RED);
 
 	control_timeout = -1;
 	for (;;) {
