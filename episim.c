@@ -22,7 +22,7 @@ struct offset {
 	int col;
 };
 
-struct offset offsets[] = {
+static const struct offset offsets[] = {
 	{-1, -1}, {-1, 0}, {-1, 1},
 	{ 0, -1},          { 0, 1},
 	{ 1, -1}, { 1, 0}, { 1, 1},
@@ -52,11 +52,11 @@ struct World {
 };
 
 
-unsigned int n_neighbors = sizeof(offsets) / sizeof(struct offset);
+static const unsigned int n_neighbors = sizeof(offsets) / sizeof(struct offset);
 
 
-struct timespec
-timespec_of_float(double n)
+static struct timespec
+timespec_of_float(const double n)
 {
 	double integral;
 	double fractional;
@@ -69,14 +69,20 @@ timespec_of_float(double n)
 	return t;
 }
 
-int
-is_probable(float probability)
+static int
+is_probable(const float probability)
 {
 	return probability >= drand48();
 }
 
-World *
-world_create(unsigned int gen, unsigned int rows, unsigned int cols, float f, float p)
+static World *
+world_create(
+	const unsigned int gen,
+	const unsigned int rows,
+	const unsigned int cols,
+	const float f,
+	const float p
+	)
 {
 	/*
 	 * IDs help us spot ancestry bugs, like a missing next/prev pointer.
@@ -108,7 +114,7 @@ world_create(unsigned int gen, unsigned int rows, unsigned int cols, float f, fl
 	return w;
 }
 
-void
+static void
 world_init(World *w)
 {
 	unsigned int r;
@@ -120,8 +126,8 @@ world_init(World *w)
 }
 
 
-void
-world_print(World *w, int playing)
+static void
+world_print(const World *w, const unsigned int playing)
 {
 	unsigned int r;
 	unsigned int k;
@@ -152,13 +158,13 @@ world_print(World *w, int playing)
 	refresh();
 }
 
-int
+static unsigned int
 world_pos_is_inbounds(World *w, unsigned int row, unsigned int col)
 {
 	return row < w->rows && col < w->cols;
 }
 
-World *
+static World *
 world_next(World *w0)
 {
 	unsigned int r;
@@ -221,7 +227,7 @@ world_next(World *w0)
 	return w1;
 }
 
-void
+static void
 world_destroy_future(World *w)
 {
 	/*
@@ -249,8 +255,8 @@ main()
 {
 	int control_timeout = -1;
 	int playing = 0;
-	struct timespec interval = timespec_of_float(1.0 / FPS);
-	struct winsize winsize;
+	const struct timespec interval = timespec_of_float(1.0 / FPS);
+	const struct winsize winsize;
 	char cmd[CMD_BUF_SIZE];
 	World *w;
 	float tmp_p;
