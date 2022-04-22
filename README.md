@@ -43,6 +43,8 @@ TODO
 ### Maybe
 - [ ] limit generation storage to a circular buffer
 - [ ] scripting language beyond basic parameter setting
+- [ ] GUI. Candidates:
+  - https://github.com/Immediate-Mode-UI/Nuklear
 
 
 Questions
