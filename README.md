@@ -1,15 +1,15 @@
 Epidemic Simulator
-==================
+===============================================================================
 
 A work-in-progress exploration of how one could go about simulating an epidemic.
 Beginning with a Forest Fire model.
 
 ![Screenshot](screenshot.png)
 
-Quick demo: https://www.youtube.com/watch?v=gZ4yIJ1_uvg
+Quick demo: <https://www.youtube.com/watch?v=gZ4yIJ1_uvg>
 
 TODO
-----
+-------------------------------------------------------------------------------
 
 ### Milestones
 - [x] CGOL
@@ -44,11 +44,11 @@ TODO
 - [ ] limit generation storage to a circular buffer
 - [ ] scripting language beyond basic parameter setting
 - [ ] GUI. Candidates:
-  - https://github.com/Immediate-Mode-UI/Nuklear
+  - <https://github.com/Immediate-Mode-UI/Nuklear>
 
 
 Questions
----------
+-------------------------------------------------------------------------------
 
 #### How to handle the case of modified past?
 ##### options
@@ -76,7 +76,7 @@ Questions
                     b. n candidates?
 
 Notes
------
+-------------------------------------------------------------------------------
 
 2 approaches:
 1. cellular (state is of a location)
